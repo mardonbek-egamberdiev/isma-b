@@ -1,402 +1,461 @@
-<<<<<<< HEAD
-<!doctype html>
-<html lang="uz">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simple Calculator</title>
-  <style>
-    :root{
-      --bg:#0f1724; /* dark blue */
-      --card:#0b1220;
-      --accent:#7c3aed;
-      --muted:#94a3b8;
-      --glass: rgba(255,255,255,0.03);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#071029 0%,#081229 50%, #07112a 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
-      color:#e6eef6;padding:24px
-    }
-    .calculator{
-      width:360px;max-width:100%;background:linear-gradient(180deg,var(--card), #071227);border-radius:16px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.7);
-    }
-    .screen{
-      background:var(--glass);padding:18px;border-radius:12px;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;min-height:92px
-    }
-    .history{font-size:13px;color:var(--muted);text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-    .output{font-size:28px;font-weight:600;text-align:right}
-    .buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    button{
-      padding:18px;border-radius:10px;border:0;background:rgba(255,255,255,0.03);color:inherit;font-size:18px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);transition:all .14s ease;box-shadow:0 4px 10px rgba(2,6,23,0.4);
-    }
-    button:active{transform:translateY(2px) scale(.998);}
-    .btn-operator{background:linear-gradient(180deg,rgba(124,58,237,0.18),rgba(124,58,237,0.08));}
-    .btn-equals{grid-column:span 2;background:var(--accent);color:white}
-    .btn-wide{grid-column:span 2}
-    .btn-danger{background:linear-gradient(180deg,rgba(239,68,68,0.12),rgba(239,68,68,0.06));}
-    .kbd-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
-    @media (max-width:420px){button{padding:14px;font-size:16px}}
-  </style>
-</head>
-<body>
-  <div class="calculator" role="application" aria-label="Calculator">
-    <div class="screen">
-      <div class="history" id="history">&nbsp;</div>
-      <div class="output" id="output">0</div>
-    </div>
-    <div class="buttons" id="buttons">
-      <button class="btn-danger" data-action="clear">C</button>
-      <button data-action="back">⌫</button>
-      <button data-action="percent">%</button>
-      <button class="btn-operator" data-value="/">÷</button>
-
-      <button data-value="7">7</button>
-      <button data-value="8">8</button>
-      <button data-value="9">9</button>
-      <button class="btn-operator" data-value="*">×</button>
-
-      <button data-value="4">4</button>
-      <button data-value="5">5</button>
-      <button data-value="6">6</button>
-      <button class="btn-operator" data-value="-">−</button>
-
-      <button data-value="1">1</button>
-      <button data-value="2">2</button>
-      <button data-value="3">3</button>
-      <button class="btn-operator" data-value="+">+</button>
-
-      <button class="btn-wide" data-value="0">0</button>
-      <button data-value=".">.</button>
-      <button class="btn-equals" data-action="equals">=</button>
-    </div>
-    <div class="kbd-hint">Keyboard: numbers, + - * /, Enter = evaluate, Backspace = delete</div>
-  </div>
-
-  <script>
-    (function(){
-      const output = document.getElementById('output');
-      const history = document.getElementById('history');
-      let expr = '';
-
-      function safeDisplay(v){
-        output.textContent = (v === '' ? '0' : v);
-      }
-
-      function append(char){
-        // prevent leading zeros like 00
-        if(expr === '0' && /[0-9]/.test(char)) expr = char;
-        else expr += char;
-        safeDisplay(expr);
-      }
-
-      function clearAll(){ expr=''; history.textContent=''; safeDisplay(''); }
-      function back(){ expr = expr.slice(0,-1); safeDisplay(expr); }
-
-      function evaluateExpression(){
-        if(!expr) return;
-        // sanitize: allow only digits, operators, dot, parentheses and percent
-        if(!/^[0-9.()+\-*/%\s]+$/.test(expr)){
-          history.textContent = 'Invalid input'; output.textContent='Error'; expr='';
-          return;
-        }
-        try{
-          // handle percent: replace 'number%' with (number/100)
-          const sanitized = expr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
-          // use Function instead of eval
-          const result = Function('return '+sanitized)();
-          history.textContent = expr + ' =';
-          expr = String(result);
-          safeDisplay(expr);
-        }catch(e){ history.textContent='Error'; output.textContent='Error'; expr=''; }
-      }
-
-      document.getElementById('buttons').addEventListener('click', (e)=>{
-        const b = e.target.closest('button'); if(!b) return;
-        const val = b.getAttribute('data-value');
-        const action = b.getAttribute('data-action');
-        if(action === 'clear') clearAll();
-        else if(action === 'back') back();
-        else if(action === 'equals') evaluateExpression();
-        else if(action === 'percent') append('%');
-        else if(val) append(val);
-      });
-
-      // keyboard support
-      window.addEventListener('keydown', (e)=>{
-        if(e.key >= '0' && e.key <= '9') { append(e.key); e.preventDefault(); }
-        else if(e.key === '.') { append('.'); e.preventDefault(); }
-        else if(['+','-','/','*','(',')'].includes(e.key)){ append(e.key); e.preventDefault(); }
-        else if(e.key === 'Enter' || e.key === '='){ evaluateExpression(); e.preventDefault(); }
-        else if(e.key === 'Backspace'){ back(); e.preventDefault(); }
-        else if(e.key === '%'){ append('%'); e.preventDefault(); }
-        else if(e.key.toLowerCase()==='c' && (e.ctrlKey||e.metaKey)){ clearAll(); }
-      });
-
-      // load
-      safeDisplay('');
-    })();
-  </script>
-</body>
-</html>
-=======
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haftalik Menyu</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
-        
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 30px;
-        }
-        
-        .day-card {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .day-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        
-        .day-card h2 {
-            color: #d63031;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #d63031;
-            padding-bottom: 10px;
-        }
-        
-        .meal {
-            margin-bottom: 15px;
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 4px solid #d63031;
-        }
-        
-        .meal-title {
-            font-weight: bold;
-            color: #2d3436;
-            font-size: 1.1em;
-            margin-bottom: 5px;
-        }
-        
-        .meal-content {
-            color: #636e72;
-            line-height: 1.6;
-        }
-        
-        .tips {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            margin: 30px;
-            padding: 30px;
-            border-radius: 15px;
-        }
-        
-        .tips h3 {
-            color: #2d3436;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-        }
-        
-        .tips ul {
-            list-style: none;
-        }
-        
-        .tips li {
-            padding: 10px;
-            margin-bottom: 10px;
-            background: white;
-            border-radius: 8px;
-            color: #2d3436;
-            padding-left: 40px;
-            position: relative;
-        }
-        
-        .tips li:before {
-            content: "✓";
-            position: absolute;
-            left: 15px;
-            color: #00b894;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Mahsulotlar ro'yxati</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      margin: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+
+    .products {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      border: 1px solid lightgray;
+      border-radius: 8px;
+      background-color: white;
+      width: 220px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+      border-color: red;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .price {
+      font-weight: bold;
+      color: black;
+      margin-top: 5px;
+    }
+
+    .month-price {
+      background-color: #eee;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .label {
+      background-color: #4c8bf5;
+      color: white;
+      border-radius: 10px;
+      padding: 2px 5px;
+      font-size: 12px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    .text{
+      text-align: flex;
+      padding: left;  
+    }
+    img.like-product{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    img.comparison{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    
+    img.product{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    .fast-view{
+      visibility: hidden;
+      position: relative;
+      background-color: azure;
+      border-radius: 20px;
+      padding: 5px;
+    }
+    .card:hover img.like-product{
+      visibility: visible;
+      margin-top: -150;
+    }
+     .card:hover img.comparison{
+      visibility: visible;
+      margin-top: -1590
+
+    } .card:hover img.view{
+      visibility: visible;
+    }
+    .card:hover img.product{
+      visibility: visible;
+    }
+    .text1{
+      background-color: antiquewhite;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+
+     @media screen and (max-width: 300px){
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      margin: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .products {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      border: 1px solid lightgray;
+      border-radius: 8px;
+      background-color: white;
+      width: 220px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+      border-color: red;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .price {
+      font-weight: bold;
+      color: black;
+      margin-top: 5px;
+    }
+
+    .month-price {
+      background-color: #eee;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .label {
+      background-color: #4c8bf5;
+      color: white;
+      border-radius: 10px;
+      padding: 2px 5px;
+      font-size: 12px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    .text{
+      text-align: flex;
+      padding: left;  
+    }
+    img.like-product{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    img.comparison{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    
+    img.product{
+      visibility: hidden;
+      position: relative;
+      margin-left: 85%;
+      width: 30px;
+      top: 10px;
+      background-color: azure;
+      border-radius: 50px;
+      padding: 5px;
+    }
+    .fast-view{
+      visibility: hidden;
+      position: relative;
+      background-color: azure;
+      border-radius: 20px;
+      padding: 5px;
+    }
+    .card:hover img.like-product{
+      visibility: visible;
+      margin-top: -150;
+    }
+     .card:hover img.comparison{
+      visibility: visible;
+      margin-top: -1590
+
+    } .card:hover img.view{
+      visibility: visible;
+    }
+    .card:hover img.product{
+      visibility: visible;
+    }
+    .text1{
+      background-color: antiquewhite;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+    .price-cover img{
+      width: 30px;
+      height: 30px;
+    }
+    .price-cover{
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 300;
+      font-size: 11px;
+    }
+  }
+
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🍽️ Haftalik Sodda Menyu</h1>
-            <p>Mazali va oson taomlar</p>
-        </header>
-        
-        <div class="menu-grid">
-            <div class="day-card">
-                <h2>Dushanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Tuxum, non, sariyog', choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Osh (palov), salat</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Sho'rva, non</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Seshanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Qaymoq va non, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Lag'mon</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Qovurilgan kartoshka, go'sht, salat</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Chorshanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Omlet, non, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Manti</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Mastava</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Payshanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Kasha (bo'tqa), non, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Dimlama</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Makaron, go'sht, salat</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Juma</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Tuxum va kolbasa, non, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Shashlik, non, sabzavot</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Sho'rva</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Shanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Qaymoq va asal, non, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Somsa, salat</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Osh (palov)</div>
-                </div>
-            </div>
-            
-            <div class="day-card">
-                <h2>Yakshanba</h2>
-                <div class="meal">
-                    <div class="meal-title">🌅 Nonushta</div>
-                    <div class="meal-content">Pancake yoki oladyi, choy</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">☀️ Tushlik</div>
-                    <div class="meal-content">Chuchvara</div>
-                </div>
-                <div class="meal">
-                    <div class="meal-title">🌙 Kechki ovqat</div>
-                    <div class="meal-content">Qovurilgan tovuq, kartoshka, salat</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="tips">
-            <h3>💡 Foydali Maslahatlar</h3>
-            <ul>
-                <li>Har kuni yangi sabzavot va mevalar iste'mol qiling</li>
-                <li>Suv ko'proq iching (kuniga 1.5-2 litr)</li>
-                <li>Salat uchun: pomidor, bodring, piyoz, sabzi</li>
-                <li>Har doim uyda non, tuxum, guruch va makaron bo'lsin</li>
-            </ul>
-        </div>
+  <h2 class="text1">Mahsulotlar</h2>
+
+  <div class="products">
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <span class="fast-view">Tezkor ko`rish</span>
+      <img src="c:\Users\User_203-2\Downloads\konditsoner avalon(1).jpg" alt="konditsioner">
+      <h3>Avalon ART 12HQ Konditsioneri</h3>
+      <div class="month-price">1 918 660 so'mdan / 18</div>
+      <div class="price">7 999 000 so'm</div>
+  </div>
+      <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 118 (2).jpg" alt="konditsioner">
+      <h3> LG 118TS Konditsioneri</h3>
+      <div class="month-price">843 257 so'mdan / 18</div>
+      <div class="price">10 991 000 so'm</div>
     </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 12hs.rog.png" alt="konditsioner">
+      <h3>LG 112TS Konditsioneri</h3>
+      <div class="month-price">161 920 so'mdan / 18</div>
+      <div class="price">9 199 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner shivaki.org.png" alt="Hisense konditsioneri">
+      <h3>Avalon ART 12HQ Konditsioneri</h3>
+      <div class="month-price">613 257 so'mdan / 18</div>
+      <div class="price">25 026 000 so'm</div>
+    </div>
+    
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\aero cool shiveaki.org.png" alt="konditsioner shivaki sensei">
+      <h3>Avalon ART 12HQ Konditsioneri</h3>
+      <div class="month-price">613 217 so'mdan / 18</div>
+      <div class="price">2 112 000 so'm</div>
+    </div>
+    
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\samsung ar12.org.png" alt="ARG CSH konditsioneri">
+      <h3>ARG CSH konditsioneri</h3>
+      <div class="month-price">229 517 so'mdan / 18</div>
+      <div class="price">7 999 000 so'm</div>
+    </div>
+    
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 180b.org.png" alt="konditsioner 180B">
+      <h3>konditsioner b180</h3>
+      <div class="month-price">597 310 so'mdan / 18</div>
+      <div class="price">2 999 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 12hs.rog.png" alt="artrl 12hs">
+      <h3>Artel 12hs</h3>
+      <div class="month-price">613 217 so'mdan / 18</div>
+      <div class="price">7 791 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner id.org.png" alt="konditsioner shivaki sensei">
+      <h3>id konditsioneri</h3>
+      <div class="month-price">344 924 so'mdan / 18</div>
+      <div class="price">4 499 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\hisense konditsioner..org.jpg" alt="konditsioner shivaki sensei">
+      <h3>Hisense konditsioneri</h3>
+      <div class="month-price">252 424 so'mdan / 18</div>
+      <div class="price">3 299 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\hisense konditsioner..org.jpg" alt="Hisense">
+      <h3>Avalon ART 12HQ Konditsioneri</h3>
+      <div class="month-price">459 421 so'mdan / 18</div>
+      <div class="price">4 999 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\aero.org.png" alt="konditsioner shivaki sensei">
+      <h3>Areo konditsioneri</h3>
+      <div class="month-price">9 919 000 so'mdan / 18</div>
+      <div class="price">5 999 000 so'm</div>
+    </div>
+
+    
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 118 (4).jpg" alt="konditsioner shivaki sensei">
+      <h3>Areo konditsioneri</h3>
+      <div class="month-price">769 457 so'mdan / 18</div>
+      <div class="price">9 119 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner 180b.org.png" alt="konditsioner shivaki sensei">
+      <h3>Areo konditsioneri</h3>
+      <div class="month-price">490 590 so'mdan / 18</div>
+      <div class="price">6 399 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\hisense konditsioner..org.jpg" alt="samsung a12">
+      <h3>Samsung a12 konditsioneri</h3>
+      <div class="month-price">383 257 so'mdan / 18</div>
+      <div class="price">4 999 000 so'm</div>
+    </div>
+
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\konditsioner id.org.png" alt="konditsioner shivaki sensei">
+      <h3>Areo konditsioneri</h3>
+      <div class="month-price">613 257 so'mdan / 18</div>
+      <div class="price">5 999 000 so'm</div>
+    </div>
+    
+    <div class="card">
+      <div class="label">50*0*0</div>
+      <img class="like-product"src="c:\Users\User_203-2\Downloads\heart.png" alt="">
+      <img class="comparison" src="c:\Users\User_203-2\Downloads\measurement.png" alt="">
+      <img class="product"src="c:\Users\User_203-2\Downloads\cart-icon.png" alt="">
+      <img src="c:\Users\User_203-2\Downloads\aero.org.png" alt="konditsioner shivaki sensei">
+      <h3>Areo konditsioneri</h3>
+      <div class="month-price">673 977 so'mdan / 18</div>
+      <div class="price">8 791 000 so'm</div>
+    </div>
+     
+    
+    </div>
+  </div>
 </body>
 </html>
->>>>>>> afd0a2cc3b982216c0b1a98e711b24041485651b
